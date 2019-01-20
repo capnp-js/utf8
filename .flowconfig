@@ -1,0 +1,3 @@
+[options]
+module.name_mapper='^\@capnp-js/core$' -> '<PROJECT_ROOT>'
+module.name_mapper='^\@capnp-js/core/\(.*\)' -> '<PROJECT_ROOT>/\1'
