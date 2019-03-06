@@ -26,6 +26,8 @@ import type { BytesR } from "@capnp-js/bytes";
 
 type u32 = number;
 
+import { get } from "@capnp-js/bytes";
+
 const typeTable = new Uint8Array([
    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -78,7 +80,7 @@ export function decode(bytes: BytesR): string | Error {
      stop iterating when 4 bytes remain. */
   const end = bytes.length - 4;
   while (i < end) {
-    let byte = bytes[i++];
+    let byte = get(i++, bytes);
     let type = typeTable[byte];
     let point = (0xff >> type) & byte;
     let state = transitionTable[type];
@@ -86,7 +88,7 @@ export function decode(bytes: BytesR): string | Error {
       if (state === 12) {
         return new Utf8DecodeError();
       }
-      byte = bytes[i++];
+      byte = get(i++, bytes);
       type = typeTable[byte];
       point = (byte & 0x3f) | (point << 6);
       state = transitionTable[state + type];
@@ -98,7 +100,7 @@ export function decode(bytes: BytesR): string | Error {
   /* This time I need to check that I haven't run out of bytes as I consume each
      byte. Otherwise it's an exact copy of the above loop. */
   while (i < bytes.length) {
-    let byte = bytes[i++];
+    let byte = get(i++, bytes);
     let type = typeTable[byte];
     let point = (0xff >> type) & byte;
     let state = transitionTable[type];
@@ -107,7 +109,7 @@ export function decode(bytes: BytesR): string | Error {
       if (state === 12 || i === bytes.length) {
         return new Utf8DecodeError();
       }
-      byte = bytes[i++];
+      byte = get(i++, bytes);
       type = typeTable[byte];
       point = (byte & 0x3f) | (point << 6);
       state = transitionTable[state + type];

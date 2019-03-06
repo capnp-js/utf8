@@ -1,6 +1,7 @@
 /* @flow */
 
 import * as assert from "assert";
+import { create, set } from "@capnp-js/bytes";
 import { describe, it } from "mocha";
 import { Utf8DecodeError, decode } from "../../src/decode";
 
@@ -8,27 +9,27 @@ import { Utf8DecodeError, decode } from "../../src/decode";
 
 describe("decode", t => {
   it("handles single octets", function () {
-    const value = new Uint8Array(2);
-    value[1] = 0;
+    const value = create(2);
+    set(0, 1, value);
     let i = 0;
 
     /* 00000000 to 01111111 */
     for (; i<128; ++i) {
-      value[0] = i;
+      set(i, 0, value);
       assert.ok(!(decode(value) instanceof Utf8DecodeError));
     }
 
     /* 10000000 to 10111111 */
     /* An earlier 11... octet must anticipate these octets. */
     for (; i<192; ++i) {
-      value[0] = i;
+      set(i, 0, value);
       assert.ok(decode(value) instanceof Utf8DecodeError);
     }
   });
 
   it("handles double octets", function () {
-    const value = new Uint8Array(3);
-    value[2] = 0;
+    const value = create(3);
+    set(0, 2, value);
     let i = 192;
 
     /* * Single octet bits: 0xxxxxxx          =>     xxxxxxx
@@ -38,50 +39,50 @@ describe("decode", t => {
          octets beginning yyyyyzzzzzz = 0000... are therefore invalid. */
     /* 11000000 to 11000001 */
     for (; i<194; ++i) {
-      value[0] = i;
+      set(i, 0, value);
       let j = 0;
 
       /* 00000000 to 01111111 */
       /* The preceding 110... octet requires a single, following 10... octet. */
       for (; j<128; ++j) {
-        value[1] = j;
+        set(j, 1, value);
         assert.ok(decode(value) instanceof Utf8DecodeError);
       }
 
       /* 10000000 to 10111111 */
       for (; j<192; ++j) {
-        value[1] = j;
+        set(j, 1, value);
         assert.ok(decode(value) instanceof Utf8DecodeError);
       }
 
       /* 11000000 to 11111111 */
       for (; j<256; ++j) {
-        value[1] = j;
+        set(j, 1, value);
         assert.ok(decode(value) instanceof Utf8DecodeError);
       }
     }
 
     /* 11000010 to 11011111 */
     for (; i<224; ++i) {
-      value[0] = i;
+      set(i, 0, value);
       let j = 0;
 
       /* 00000000 to 01111111 */
       /* The preceding 110... octet requires a single, following 10... octet. */
       for (; j<128; ++j) {
-        value[1] = j;
+        set(j, 1, value);
         assert.ok(decode(value) instanceof Utf8DecodeError);
       }
 
       /* 10000000 to 10111111 */
       for (; j<192; ++j) {
-        value[1] = j;
+        set(j, 1, value);
         assert.ok(!(decode(value) instanceof Utf8DecodeError));
       }
 
       /* 11000000 to 11111111 */
       for (; j<256; ++j) {
-        value[1] = j;
+        set(j, 1, value);
         assert.ok(decode(value) instanceof Utf8DecodeError);
       }
     }
@@ -90,22 +91,22 @@ describe("decode", t => {
   //TODO: Comment on how canonicalization is not handled by my implementation.
   it("handles triple octets", function () {
     this.timeout(20000);
-    const value = new Uint8Array(4);
-    value[3] = 0;
+    const value = create(4);
+    set(0, 3, value);
     let i = 224;
 
     /* 11100000 alone */
     for (; i<225; ++i) {
-      value[0] = i;
+      set(i, 0, value);
       let j = 0;
 
       /* 00000000 to 01111111 */
       for (; j<128; ++j) {
-        value[1] = j;
+        set(j, 1, value);
         let k = 128;
 
         /* The `j` bits should trigger an error regardless of `k`. */
-        value[2] = k;
+        set(k, 2, value);
         assert.ok(decode(value) instanceof Utf8DecodeError);
       }
 
@@ -120,84 +121,84 @@ describe("decode", t => {
            case. */
       /* 10000000 to 10011111 */
       for (; j<160; ++j) {
-        value[1] = j;
+        set(j, 1, value);
         let k = 128;
 
         /* The `j` bits should trigger an error regardless of `k`. */
-        value[2] = k;
+        set(k, 2, value);
         assert.ok(decode(value) instanceof Utf8DecodeError);
       }
 
       /* 10100000 to 10111111 */
       for (; j<192; ++j) {
-        value[1] = j;
+        set(j, 1, value);
         let k = 0;
 
         /* 00000000 to 01111111 */
         for (; k<128; ++k) {
-          value[2] = k;
+          set(k, 2, value);
           assert.ok(decode(value) instanceof Utf8DecodeError);
         }
 
         /* 10000000 to 10111111 */
         for (; k<192; ++k) {
-          value[2] = k;
+          set(k, 2, value);
           assert.ok(!(decode(value) instanceof Utf8DecodeError));
         }
 
         /* 11000000 to 11111111 */
         for (; k<256; ++k) {
-          value[2] = k;
+          set(k, 2, value);
           assert.ok(decode(value) instanceof Utf8DecodeError);
         }
       }
 
       /* 11000000 to 11111111 */
       for (; j<256; ++j) {
-        value[1] = j;
+        set(j, 1, value);
         let k = 128;
 
         /* The `j` bits should trigger an error regardless of `k`. */
-        value[2] = k;
+        set(k, 2, value);
         assert.ok(decode(value) instanceof Utf8DecodeError);
       }
     }
 
     /* 11100001 to 11101111 */
     for (; i<240; ++i) {
-      value[0] = i;
+      set(i, 0, value);
       let j = 0;
 
       /* 00000000 to 01111111 */
       for (; j<128; ++j) {
-        value[1] = j;
+        set(j, 1, value);
         let k = 128;
 
         /* The `j` bits should trigger an error regardless of `k`. */
-        value[2] = k;
+        set(k, 2, value);
         assert.ok(decode(value) instanceof Utf8DecodeError);
       }
 
       /* 10000000 to 10011111 */
       for (; j<160; ++j) {
-        value[1] = j;
+        set(j, 1, value);
         let k = 0;
 
         /* 00000000 to 01111111 */
         for (; k<128; ++k) {
-          value[2] = k;
+          set(k, 2, value);
           assert.ok(decode(value) instanceof Utf8DecodeError);
         }
 
         /* 10000000 to 10111111 */
         for (; k<192; ++k) {
-          value[2] = k;
+          set(k, 2, value);
           assert.ok(!(decode(value) instanceof Utf8DecodeError));
         }
 
         /* 11000000 to 11111111 */
         for (; k<256; ++k) {
-          value[2] = k;
+          set(k, 2, value);
           assert.ok(decode(value) instanceof Utf8DecodeError);
         }
       }
@@ -206,45 +207,45 @@ describe("decode", t => {
       if (i === 237) {
         /* 0xd800 - 0xdfff are forbidden */
         for (; j<192; ++j) {
-          value[1] = j;
+          set(j, 1, value);
           let k = 128;
 
           /* The `j` bits should trigger an error regardless of `k`. */
-          value[2] = k;
+          set(k, 2, value);
           assert.ok(decode(value) instanceof Utf8DecodeError);
         }
       } else {
         for (; j<192; ++j) {
-          value[1] = j;
+          set(j, 1, value);
           let k = 0;
 
           /* 00000000 to 01111111 */
           for (; k<128; ++k) {
-            value[2] = k;
+            set(k, 2, value);
             assert.ok(decode(value) instanceof Utf8DecodeError);
           }
 
           /* 10000000 to 10111111 */
           for (; k<192; ++k) {
-            value[2] = k;
+            set(k, 2, value);
             assert.ok(!(decode(value) instanceof Utf8DecodeError));
           }
 
           /* 11000000 to 11111111 */
           for (; k<256; ++k) {
-            value[2] = k;
-          assert.ok(decode(value) instanceof Utf8DecodeError);
+            set(k, 2, value);
+            assert.ok(decode(value) instanceof Utf8DecodeError);
           }
         }
       }
 
       /* 11000000 to 11111111 */
       for (; j<256; ++j) {
-        value[1] = j;
+        set(j, 1, value);
         let k = 128;
 
         /* The `j` bits should trigger an error regardless of `k`. */
-        value[2] = k;
+        set(k, 2, value);
         assert.ok(decode(value) instanceof Utf8DecodeError);
       }
     }
@@ -252,34 +253,35 @@ describe("decode", t => {
 
   it("handles quad octets", function () {
     this.timeout(200000);
-    const value = new Uint8Array(5);
-    value[4] = 0;
+    const value = create(5);
+
+    set(0, 4, value);
     let i = 240;
 
     /* 11110000 alone */
     for (; i<241; ++i) {
-      value[0] = i;
+      set(i, 0, value);
       let j = 0;
 
       /* 00000000 to 01111111 */
       for (; j<128; ++j) {
-        value[1] = j;
+        set(j, 1, value);
         let k = 128;
-        value[2] = k;
+        set(k, 2, value);
         let l = 128;
 
-        value[3] = l;
+        set(l, 3, value);
         assert.ok(decode(value) instanceof Utf8DecodeError);
       }
 
       /* 10000000 to 10001111 */
       for (; j<144; ++j) {
-        value[1] = j;
+        set(j, 1, value);
         let k = 128;
-        value[2] = k;
+        set(k, 2, value);
         let l = 128;
 
-        value[3] = l;
+        set(l, 3, value);
         assert.ok(decode(value) instanceof Utf8DecodeError);
       }
 
@@ -293,255 +295,255 @@ describe("decode", t => {
          elaborated case. */
       /* 10010000 to 10111111 */
       for (; j<192; ++j) {
-        value[1] = j;
+        set(j, 1, value);
         let k = 0;
 
         /* 00000000 to 01111111 */
         for (; k<128; ++k) {
-          value[2] = k;
+          set(k, 2, value);
           let l = 128;
 
-          value[3] = l;
+          set(l, 3, value);
           assert.ok(decode(value) instanceof Utf8DecodeError);
         }
 
         /* 10000000 to 10111111 */
         for (; k<192; ++k) {
-          value[2] = k;
+          set(k, 2, value);
           let l = 0;
 
           /* 00000000 to 01111111 */
           for (; l<128; ++l) {
-            value[3] = l;
+            set(l, 3, value);
             assert.ok(decode(value) instanceof Utf8DecodeError);
           }
 
           /* 10000000 to 10111111 */
           for (; l<192; ++l) {
-            value[3] = l;
+            set(l, 3, value);
             assert.ok(!(decode(value) instanceof Utf8DecodeError));
           }
 
           /* 11000000 to 11111111 */
           for (; l<256; ++l) {
-            value[3] = l;
+            set(l, 3, value);
             assert.ok(decode(value) instanceof Utf8DecodeError);
           }
         }
 
         /* 11000000 to 11111111 */
         for (; k<256; ++k) {
-          value[2] = k;
+          set(k, 2, value);
           let l = 128;
 
-          value[3] = l;
+          set(l, 3, value);
           assert.ok(decode(value) instanceof Utf8DecodeError);
         }
       }
 
       /* 11000000 to 11111111 */
       for (; j<256; ++j) {
-        value[1] = j;
+        set(j, 1, value);
         let k = 128;
-        value[2] = k;
+        set(k, 2, value);
         let l = 128;
 
-        value[3] = l;
+        set(l, 3, value);
         assert.ok(decode(value) instanceof Utf8DecodeError);
       }
     }
 
     /* 11110001 to 11110011 */
     for (; i<244; ++i) {
-      value[0] = i;
+      set(i, 0, value);
       let j = 0;
 
       /* 00000000 to 01111111 */
       for (; j<128; ++j) {
-        value[1] = j;
+        set(j, 1, value);
         let k = 128;
-        value[2] = k;
+        set(k, 2, value);
         let l = 128;
 
-        value[3] = l;
+        set(l, 3, value);
         assert.ok(decode(value) instanceof Utf8DecodeError);
       }
 
       /* 10000000 to 10111111 */
       for (; j<192; ++j) {
-        value[1] = j;
+        set(j, 1, value);
         let k = 0;
 
         /* 00000000 to 01111111 */
         for (; k<128; ++k) {
-          value[2] = k;
+          set(k, 2, value);
           let l = 128;
 
-          value[3] = l;
+          set(l, 3, value);
           assert.ok(decode(value) instanceof Utf8DecodeError);
         }
 
         /* 10000000 to 10111111 */
         for (; k<192; ++k) {
-          value[2] = k;
+          set(k, 2, value);
           let l = 0;
 
           /* 00000000 to 01111111 */
           for (; l<128; ++l) {
-            value[3] = l;
+            set(l, 3, value);
             assert.ok(decode(value) instanceof Utf8DecodeError);
           }
 
           /* 10000000 to 10111111 */
           for (; l<192; ++l) {
-            value[3] = l;
+            set(l, 3, value);
             assert.ok(!(decode(value) instanceof Utf8DecodeError));
           }
 
           /* 11000000 to 11111111 */
           for (; l<256; ++l) {
-            value[3] = l;
+            set(l, 3, value);
             assert.ok(decode(value) instanceof Utf8DecodeError);
           }
         }
 
         /* 11000000 to 11111111 */
         for (; k<256; ++k) {
-          value[2] = k;
+          set(k, 2, value);
           let l = 128;
 
-          value[3] = l;
+          set(l, 3, value);
           assert.ok(decode(value) instanceof Utf8DecodeError);
         }
       }
 
       /* 11000000 to 11111111 */
       for (; j<256; ++j) {
-        value[1] = j;
+        set(j, 1, value);
         let k = 128;
-        value[2] = k;
+        set(k, 2, value);
         let l = 128;
 
-        value[3] = l;
+        set(l, 3, value);
         assert.ok(decode(value) instanceof Utf8DecodeError);
       }
     }
 
     /* 11110100 alone */
     for (; i<245; ++i) {
-      value[0] = i;
+      set(i, 0, value);
       let j = 0;
 
       /* 00000000 to 01111111 */
       for (; j<128; ++j) {
-        value[1] = j;
+        set(j, 1, value);
         let k = 128;
-        value[2] = k;
+        set(k, 2, value);
         let l = 128;
 
-        value[3] = l;
+        set(l, 3, value);
         assert.ok(decode(value) instanceof Utf8DecodeError);
       }
 
       /* 10000000 to 10001111 */
       for (; j<144; ++j) {
-        value[1] = j;
+        set(j, 1, value);
         let k = 0;
 
         /* 00000000 to 01111111 */
         for(; k<128; ++k) {
-          value[2] = k;
+          set(k, 2, value);
           let l = 128;
 
-          value[3] = l;
+          set(l, 3, value);
           assert.ok(decode(value) instanceof Utf8DecodeError);
         }
 
         /* 10000000 to 10111111 */
         for (; k<192; ++k) {
-          value[2] = k;
+          set(k, 2, value);
           let l = 0;
 
           /* 00000000 to 01111111 */
           for (; l<128; ++l) {
-            value[3] = l;
+            set(l, 3, value);
             assert.ok(decode(value) instanceof Utf8DecodeError);
           }
 
           /* 10000000 to 10111111 */
           for (; l<192; ++l) {
-            value[3] = l;
+            set(l, 3, value);
             assert.ok(!(decode(value) instanceof Utf8DecodeError));
           }
 
           /* 11000000 to 11111111 */
           for (; l<256; ++l) {
-            value[3] = l;
+            set(l, 3, value);
             assert.ok(decode(value) instanceof Utf8DecodeError);
           }
         }
 
         /* 11000000 to 11111111 */
         for (; k<256; ++k) {
-          value[2] = k;
+          set(k, 2, value);
           let l = 128;
 
-          value[3] = l;
+          set(l, 3, value);
           assert.ok(decode(value) instanceof Utf8DecodeError);
         }
       }
 
       /* 10010000 to 11111111 */
       for (; j<256; ++j) {
-        value[1] = j;
+        set(j, 1, value);
         let k = 128;
-        value[2] = k;
+        set(k, 2, value);
         let l = 128;
 
-        value[3] = l;
+        set(l, 3, value);
         assert.ok(decode(value) instanceof Utf8DecodeError);
       }
     }
 
     /* 11110000 to 11110111 */
     for (; i<248; ++i) {
-      value[0] = i;
+      set(i, 0, value);
       let j = 128;
-      value[1] = j;
+      set(j, 1, value);
       let k = 128;
-      value[2] = k;
+      set(k, 2, value);
       let l = 128;
 
-      value[3] = l;
+      set(l, 3, value);
       assert.ok(decode(value) instanceof Utf8DecodeError);
     }
   });
 
   it("handles illegal octets", function () {
-    const value = new Uint8Array(2);
-    value[1] = 0;
+    const value = create(2);
+    set(0, 1, value);
     let i = 248;
 
     /* 11111000 to 11111111 */
     for (; i<256; ++i) {
-      value[0] = i;
+      set(i, 0, value);
       assert.ok(decode(value) instanceof Utf8DecodeError);
     }
 
     /* 11000000 */
-    value[0] = 0xc0;
+    set(0xc0, 0, value);
     assert.ok(decode(value) instanceof Utf8DecodeError);
   
     /* 11000001 */
-    value[0] = 0xc1;
+    set(0xc1, 0, value);
     assert.ok(decode(value) instanceof Utf8DecodeError);
   
     /* 11110101 */
-    value[0] = 0xf5;
+    set(0xf5, 0, value);
     assert.ok(decode(value) instanceof Utf8DecodeError);
   
     /* 11111111 */
-    value[0] = 0xff;
+    set(0xff, 0, value);
     assert.ok(decode(value) instanceof Utf8DecodeError);
   });
 });

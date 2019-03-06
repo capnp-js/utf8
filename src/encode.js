@@ -2,6 +2,8 @@
 
 import type { BytesB } from "@capnp-js/bytes";
 
+import { set } from "@capnp-js/bytes";
+
 type uint = number;
 
 export function stringBytes(string: string): uint {
@@ -59,19 +61,19 @@ export function encode(string: string, target: BytesB): void {
     }
 
     if (c <= 0x7f) {
-      target[j++] = c;
+      set(c, j++, target);
     } else if (c <= 0x07ff) {
-      target[j++] = 0xc0 | (c >>> 6);
-      target[j++] = 0x80 | ((c >>> 0) & 0x3f);
+      set(0xc0 | (c >>> 6), j++, target);
+      set(0x80 | ((c >>> 0) & 0x3f), j++, target);
     } else if (c <= 0xffff) {
-      target[j++] = 0xe0 | (c >>> 12);
-      target[j++] = 0x80 | ((c >>> 6) & 0x3f);
-      target[j++] = 0x80 | ((c >>> 0) & 0x3f);
+      set(0xe0 | (c >>> 12), j++, target);
+      set(0x80 | ((c >>> 6) & 0x3f), j++, target);
+      set(0x80 | ((c >>> 0) & 0x3f), j++, target);
     } else {
-      target[j++] = 0xf0 | (c >>> 18);
-      target[j++] = 0x80 | ((c >>> 12) & 0x3f);
-      target[j++] = 0x80 | ((c >>> 6) & 0x3f);
-      target[j++] = 0x80 | ((c >>> 0) & 0x3f);
+      set(0xf0 | (c >>> 18), j++, target);
+      set(0x80 | ((c >>> 12) & 0x3f), j++, target);
+      set(0x80 | ((c >>> 6) & 0x3f), j++, target);
+      set(0x80 | ((c >>> 0) & 0x3f), j++, target);
     }
   }
 }
